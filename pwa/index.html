@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0e1116">
+<title>258路 · 南昌巴士人生</title>
+<style>
+  :root{
+    --bg:#0e1116; --card:#171c25; --card2:#11161f;
+    --line:#28303d; --text:#eef1f6; --muted:#8a94a6; --dim:#606b7d;
+    --red:#e23b33; --red2:#ff6a4d; --amber:#ffb020; --green:#3ecf8e;
+    --cream:#f7f1e4;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1100px 600px at 50% -10%, #1b2330 0%, transparent 62%), #0e1116;
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:14px;line-height:1.5;min-height:100vh;
+    padding-bottom:calc(78px + env(safe-area-inset-bottom));
+    touch-action:manipulation;
+  }
+  body.modal-open{overflow:hidden}
+  header{
+    position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+    background:rgba(14,17,22,.84);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .badge{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(145deg,#e8453b,#b81f22);color:#fff;font-size:18px;font-weight:800;
+    letter-spacing:.5px;box-shadow:0 6px 18px rgba(226,59,51,.35)}
+  .brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+  .brand small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stats{display:flex;gap:13px;flex:none}
+  .stats > div{text-align:right}
+  .stats small{display:block;font-size:10px;color:var(--muted);letter-spacing:1px}
+  .stats b{font-size:16px;font-variant-numeric:tabular-nums}
+  #statMoney{color:var(--amber)}
+  #statRep{color:var(--green)}
+
+  main{max-width:600px;margin:0 auto;padding:0 12px}
+
+  /* ---------- 地图 ---------- */
+  .map-card{margin-top:12px;border-radius:18px;overflow:hidden;background:var(--cream);position:relative;
+    box-shadow:0 14px 34px rgba(0,0,0,.4);border:1px solid #3a3323}
+  .map-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;
+    background:linear-gradient(180deg,#fbf6ea,#f1e7d4);border-bottom:1px solid #e0d3bb}
+  .route-line{flex:1;min-width:130px;font-size:11.5px;font-weight:700;color:#5c4a33;display:flex;align-items:center;gap:6px}
+  .route-line .num{background:var(--red);color:#fff;border-radius:6px;padding:2px 6px;font-size:10.5px;letter-spacing:.5px}
+  .route-line span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .year-chips{display:flex;gap:4px}
+  .year-chips button{border:1px solid #d8c8ac;background:#fffaf0;color:#7a6547;font-size:10.5px;
+    padding:3px 8px;border-radius:999px;font-weight:600;line-height:1.4}
+  .year-chips button.on{background:#3a2f21;color:#ffe9b8;border-color:#3a2f21}
+  #map{display:block;width:100%;aspect-ratio:800/620;background:var(--cream)}
+  .map-legend{display:flex;gap:12px;flex-wrap:wrap;padding:7px 11px;background:#f1e7d4;
+    border-top:1px solid #e0d3bb;color:#7b6749;font-size:9.5px}
+  .map-legend i{display:inline-block;width:14px;height:3px;background:var(--red);border-radius:2px;
+    margin-right:4px;vertical-align:middle}
+  .map-legend .dash{background:none;border-top:1px dashed #8d7a5c;height:0}
+  .map-note{opacity:.7;margin-left:auto}
+  .view-banner{position:absolute;left:9px;right:9px;bottom:38px;z-index:6;display:none;align-items:center;gap:8px;
+    background:rgba(23,28,37,.93);color:#f2e6cd;border:1px solid #3a4351;border-radius:12px;
+    padding:8px 10px;font-size:10.5px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+  .view-banner.show{display:flex}
+  .view-banner b{color:#ffc76a}
+  .view-banner button{margin-left:auto;flex:none;border:1px solid #4a5464;background:#1d232e;color:#fff;
+    border-radius:9px;padding:4px 9px;font-size:10.5px}
+  .stop-tip{position:absolute;left:50%;bottom:12px;transform:translate(-50%,8px);z-index:7;
+    background:rgba(23,28,37,.94);border:1px solid #3a4351;color:#fff;border-radius:11px;
+    padding:7px 12px;font-size:11px;display:flex;gap:8px;align-items:center;opacity:0;pointer-events:none;
+    transition:.2s;white-space:nowrap}
+  .stop-tip.show{opacity:1;transform:translate(-50%,0)}
+  .stop-tip b{font-size:12px;color:#ffe2a8}
+  .stop-tip span{color:#9aa4b4;font-size:10.5px}
+
+  /* ---------- 地图内元素 ---------- */
+  #map text{font-family:inherit}
+  .st-label{font-size:9.5px;fill:#5a4a34;font-weight:600;paint-order:stroke;stroke:#f8f2e5;stroke-width:2.6px;stroke-linejoin:round}
+  .poi-label{font-size:10px;fill:#9a8565;letter-spacing:.5px}
+  .area-label{font-size:12.5px;fill:#b4a58c;letter-spacing:3px;font-weight:600}
+  .water-tag{font-size:9px;fill:#7d9aa4;letter-spacing:1px}
+  .river-label{font-size:15px;fill:#89aab5;letter-spacing:6px;opacity:.8}
+  .stop .hit{fill:transparent}
+  .stop .dot{fill:#fffdf6;stroke:#c7332c;stroke-width:2;animation:stopPulse 3.6s ease-in-out infinite}
+  .stop.terminal .dot{fill:#ffb020;stroke:#7d3b00;stroke-width:2;animation:none}
+  .stop .ring{fill:none;stroke:#c7332c;stroke-width:1.2;opacity:.45}
+  @keyframes stopPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+  .bus{filter:drop-shadow(0 2px 3px rgba(80,50,10,.35))}
+  .stop{cursor:pointer}
+
+  /* ---------- 面板 ---------- */
+  .panel{display:none;animation:fadeUp .28s ease both}
+  .panel.active{display:block}
+  @keyframes fadeUp{from{opacity:.4;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .card{margin-top:12px;padding:14px;border-radius:16px;border:1px solid var(--line);
+    background:linear-gradient(180deg,#1a1f29,#161b23);box-shadow:0 8px 20px rgba(0,0,0,.22)}
+  .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .card-h h2{font-size:14px;margin:0;font-weight:700;letter-spacing:.3px}
+  .card-h .muted{font-size:11px;color:var(--muted)}
+  .tri{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .tri > div{background:var(--card2);border:1px solid #232a36;border-radius:12px;padding:9px 6px;text-align:center}
+  .tri small{display:block;color:var(--muted);font-size:10px;margin-bottom:3px}
+  .tri b{font-size:15px;font-variant-numeric:tabular-nums}
+  .tri em{display:block;font-style:normal;font-size:9px;color:var(--dim);margin-top:1px}
+  .bar{height:7px;background:#232a36;border-radius:99px;margin-top:10px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb020,#ff7a45);transition:width .45s ease}
+  .fare-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0}
+  .fare-row > span{font-size:12px;color:var(--muted)}
+  .chips{display:flex;gap:6px}
+  .chips button{border:1px solid #2d3644;background:var(--card2);color:#b8c1cf;padding:5px 12px;
+    border-radius:9px;font-size:12px;font-weight:600}
+  .chips button.on{background:#2b1706;border-color:var(--amber);color:#ffd06f}
+  .fare-row small{font-size:10px;color:var(--dim);flex-basis:100%}
+  .btn-primary{width:100%;border:0;border-radius:13px;padding:14px;font-size:15px;font-weight:700;letter-spacing:1px;
+    color:#fff;background:linear-gradient(135deg,#f04b3f,#c02527);box-shadow:0 8px 20px rgba(226,59,51,.3)}
+  .btn-primary:active{transform:translateY(1px)}
+  .btn-primary:disabled{background:#2a3039;color:#5d6675;box-shadow:none}
+  .hint{font-size:11px;color:var(--muted);text-align:center;margin:9px 0 0}
+
+  .rep-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed #232a36;font-size:12px}
+  .rep-row:last-child{border-bottom:0;padding-bottom:2px}
+  .rep-row .when{color:var(--muted);width:58px;flex:none;font-size:10.5px}
+  .rep-row .body{flex:1;min-width:0}
+  .rep-row .body small{display:block;color:var(--dim);font-size:10px;margin-top:1px}
+  .rep-row .num{font-weight:700;font-variant-numeric:tabular-nums;font-size:12.5px}
+  .pos{color:var(--green)} .neg{color:#ff6b6b}
+  .empty{color:var(--dim);font-size:12px;text-align:center;padding:10px}
+
+  .goal-line{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 0}
+  .goal-line .mk{width:16px;flex:none;text-align:center;font-weight:800}
+  .goal-line.ok .mk{color:var(--green)}
+  .goal-line.bad .mk{color:#ff6b6b}
+  .goal-line span{color:#c3ccd9}
+  .goal-title{font-size:12.5px;color:#d9c9a8;margin-bottom:6px}
+
+  .bus-shop{display:flex;gap:9px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none}
+  .bus-shop::-webkit-scrollbar{display:none}
+  .shop-card{min-width:152px;flex:1;background:var(--card2);border:1px solid #232a36;border-radius:13px;padding:10px}
+  .shop-card h4{margin:0;font-size:13px}
+  .shop-card .price{font-size:12px;font-weight:700;color:var(--amber);margin-top:2px}
+  .shop-card p{margin:5px 0 9px;font-size:10px;color:var(--muted);line-height:1.55}
+  .shop-card button{width:100%;border:1px solid #3a4351;background:#1c2430;color:#dbe3ee;border-radius:9px;
+    padding:6px;font-size:11px;font-weight:600}
+  .shop-card button:disabled{opacity:.4}
+  .shop-card button:active{opacity:.7}
+
+  .bus-row{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed #232a36}
+  .bus-row:last-child{border-bottom:0;padding-bottom:2px}
+  .bus-ico{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;
+    font-size:9.5px;font-weight:800;color:#ffe2b0;background:#2a2114;border:1px solid #443520}
+  .bus-meta{flex:1;min-width:0}
+  .bus-meta b{font-size:12.5px}
+  .bus-meta small{display:block;font-size:10px;color:var(--muted);margin-top:1px}
+  .cond-bar{height:5px;background:#232a36;border-radius:9px;margin-top:5px;overflow:hidden}
+  .cond-bar i{display:block;height:100%;border-radius:9px;background:var(--green);transition:width .3s}
+  .cond-bar i.mid{background:var(--amber)}
+  .cond-bar i.low{background:#ff5f5f}
+  .bus-acts{display:flex;flex-direction:column;gap:5px;flex:none}
+  .bus-acts button{font-size:10px;padding:5px 8px;border-radius:7px;border:1px solid #2c3542;
+    background:#151b24;color:#b9c3d2;white-space:nowrap}
+  .bus-acts button:disabled{opacity:.35}
+  .bus-acts button.danger{color:#ff8a8a;border-color:#3a2a2a}
+
+  .up-card{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #232a36}
+  .up-card:last-child{border-bottom:0;padding-bottom:2px}
+  .up-ico{width:38px;height:38px;flex:none;border-radius:11px;display:grid;place-items:center;
+    background:#22180a;color:var(--amber);font-size:10px;font-weight:800;letter-spacing:.5px}
+  .up-main{flex:1;min-width:0}
+  .up-main b{font-size:12.5px}
+  .up-main p{margin:2px 0 0;font-size:10.5px;color:var(--muted)}
+  .up-btn{flex:none;border:1px solid #3a4351;background:#1c2430;color:#dbe3ee;border-radius:9px;
+    padding:6px 10px;font-size:11px;font-weight:600;white-space:nowrap}
+  .up-btn:disabled{opacity:.4}
+  .up-btn.owned{opacity:.75;color:var(--green);border-color:#25533e;background:#12211a}
+
+  .tl{position:relative;padding-left:18px}
+  .tl:before{content:"";position:absolute;left:5px;top:8px;bottom:10px;width:2px;background:#2b3340}
+  .tl-item{position:relative;padding-bottom:13px}
+  .tl-item:last-child{padding-bottom:0}
+  .tl-item:before{content:"";position:absolute;left:-17px;top:6px;width:9px;height:9px;border-radius:50%;
+    background:#3a4351;border:2px solid #0e1116}
+  .tl-item.on:before{background:var(--red);box-shadow:0 0 0 3px rgba(226,59,51,.18)}
+  .tl-item.done:before{background:#5b6a7f}
+  .tl-item h4{margin:0;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tl-item h4 .tag{font-size:9.5px;padding:2px 6px;border-radius:999px;background:#1d2531;color:#8fa0b6;font-weight:500}
+  .tl-item h4 .tag.on{background:#2b1706;color:#ffc061}
+  .tl-item p{margin:4px 0 7px;font-size:11px;color:var(--muted);line-height:1.65}
+  .tl-item button{border:1px solid #2f3846;background:#151b24;color:#9fb0c4;border-radius:8px;
+    padding:4px 9px;font-size:10.5px}
+  .tl-item button.on{border-color:#4a5464;color:#e5edf7}
+  .disclaimer{font-size:10.5px;color:var(--dim);line-height:1.7;margin-top:12px}
+  .reset-btn{width:100%;margin-top:10px;border:1px solid #332a2a;background:#1a1414;color:#c08b8b;
+    border-radius:11px;padding:10px;font-size:12px}
+
+  /* ---------- 底部导航 ---------- */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:2px;
+    background:rgba(16,20,27,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);
+    padding:7px 8px calc(7px + env(safe-area-inset-bottom))}
+  .tabbar button{flex:1;background:none;border:0;color:var(--muted);display:flex;flex-direction:column;
+    align-items:center;gap:3px;font-size:11px;padding:4px 0;border-radius:10px}
+  .tabbar button.on{color:#fff}
+  .tabbar button.on .ico{color:var(--red2)}
+  .ico{width:20px;height:20px;color:#6d7787}
+
+  /* ---------- 弹窗 ---------- */
+  .modal-layer{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;
+    background:rgba(5,8,12,.74);backdrop-filter:blur(4px)}
+  .modal-layer.show{display:flex}
+  .modal{width:100%;max-width:480px;max-height:86vh;overflow:auto;
+    background:linear-gradient(180deg,#1b212b,#141922);border:1px solid #2c3442;
+    border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
+  @media(min-width:560px){.modal-layer{align-items:center}.modal{border-radius:20px;padding:22px}}
+  .era-tag{display:inline-block;font-size:11px;letter-spacing:2px;padding:3px 9px;border-radius:999px;
+    background:#2a1706;color:#ffc061;margin-bottom:10px}
+  .modal h3{font-size:19px;margin:0 0 10px;line-height:1.35}
+  .modal p{font-size:13px;color:#c3ccd9;line-height:1.75;margin:0 0 12px}
+  .modal .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
+  .modal .tags span{font-size:11px;color:#aeb8c7;background:#121821;border:1px solid #2a3341;
+    border-radius:999px;padding:4px 9px}
+  .modal .btn-primary{margin-top:4px}
+  .modal-actions{display:flex;gap:10px;margin-top:10px}
+  .btn-ghost{flex:1;border:1px solid #313a48;background:#171d26;color:#c2cad6;border-radius:13px;
+    padding:13px;font-size:14px}
+  .opt-btn{width:100%;text-align:left;border:1px solid #323b49;background:#141a23;border-radius:12px;
+    padding:11px 12px;margin-bottom:9px;color:#dfe6f0}
+  .opt-btn b{display:block;font-size:13px;font-weight:600}
+  .opt-btn small{display:block;color:var(--muted);font-size:10.5px;margin-top:2px;line-height:1.5}
+  .opt-btn:active{opacity:.75}
+  .intro-steps{margin:4px 0 14px}
+  .intro-steps div{display:flex;gap:9px;align-items:flex-start;padding:6px 0;font-size:12px;color:#c3ccd9}
+  .intro-steps div i{width:19px;height:19px;flex:none;border-radius:50%;background:#2a1706;
+    color:#ffc061;font-style:normal;font-size:10.5px;font-weight:700;display:grid;place-items:center}
+  .result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:4px 0 12px}
+  .result-grid div{background:#121821;border:1px solid #2a3341;border-radius:11px;padding:9px 5px;text-align:center}
+  .result-grid small{display:block;font-size:10px;color:var(--muted)}
+  .result-grid b{font-size:16px}
+  .score-line{font-size:13px;color:#ffcf72;margin-bottom:12px;font-weight:600}
+  .ending-good h3{color:#ffd88c}
+  .ending-bad h3{color:#ff8a8a}
+
+  #toast{position:fixed;left:50%;top:calc(68px + env(safe-area-inset-top));transform:translate(-50%,-12px);
+    z-index:70;background:rgba(24,30,40,.96);border:1px solid #333c4b;color:#fff;
+    padding:9px 16px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;
+    transition:.25s ease;max-width:88vw;text-align:center}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media(max-width:360px){
+    .stats{gap:9px}
+    .stats b{font-size:14px}
+    .brand h1{font-size:13.5px}
+  }
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="258璺?></head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="badge">258</div>
+    <div>
+      <h1>南昌巴士人生</h1>
+      <small id="eraName">2017 · 红谷隧道元年</small>
+    </div>
+  </div>
+  <div class="stats">
+    <div><small>资金</small><b id="statMoney">75.0万</b></div>
+    <div><small>口碑</small><b id="statRep">62</b></div>
+  </div>
+</header>
+
+<main>
+  <section class="map-card">
+    <div class="map-bar">
+      <div class="route-line"><span class="num">258</span><span id="mapRouteName">红谷配套中心 ⇄ 老福山</span></div>
+      <div class="year-chips" id="yearChips"></div>
+    </div>
+    <svg id="map" viewBox="0 0 800 620" role="img" aria-label="南昌258路示意地图">
+      <defs>
+        <linearGradient id="land" x1="0" y1="0" x2=".75" y2="1">
+          <stop offset="0" stop-color="#f9f3e6"/>
+          <stop offset="1" stop-color="#ebdfc9"/>
+        </linearGradient>
+        <pattern id="grid" width="46" height="46" patternUnits="userSpaceOnUse">
+          <path d="M46 0H0V46" fill="none" stroke="#d8cab1" stroke-width="1" opacity=".45"/>
+        </pattern>
+        <filter id="busShadow" x="-60%" y="-60%" width="240%" height="240%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#5a3a00" flood-opacity=".35"/>
+        </filter>
+      </defs>
+
+      <rect width="800" height="620" fill="url(#land)"/>
+      <rect width="800" height="620" fill="url(#grid)"/>
+
+      <!-- 水系 -->
+      <path d="M338 -40 C 312 92 366 196 344 310 C 322 424 372 530 352 660" fill="none" stroke="#a7cbd8" stroke-width="96" stroke-linecap="round"/>
+      <path d="M338 -40 C 312 92 366 196 344 310 C 322 424 372 530 352 660" fill="none" stroke="#c6e0e8" stroke-width="70" stroke-linecap="round"/>
+      <path d="M522 630 C 512 548 492 476 470 424 C 450 378 414 358 384 352" fill="none" stroke="#b6d6e0" stroke-width="24" stroke-linecap="round" opacity=".85"/>
+
+      <!-- 公园水系 -->
+      <ellipse cx="704" cy="96" rx="60" ry="36" fill="#cfe0c4" opacity=".85"/>
+      <ellipse cx="514" cy="306" rx="40" ry="25" fill="#d6e4ca" opacity=".9"/>
+      <ellipse cx="490" cy="566" rx="42" ry="22" fill="#d6e4ca" opacity=".65"/>
+
+      <!-- 桥梁 -->
+      <rect x="286" y="128" width="112" height="9" rx="3" fill="#b9a98e"/>
+      <text x="248" y="123" class="water-tag">八一大桥</text>
+      <rect x="288" y="570" width="112" height="9" rx="3" fill="#b9a98e"/>
+      <text x="248" y="598" class="water-tag">南昌大桥</text>
+
+      <!-- 红谷隧道 -->
+      <path d="M292 436 L 396 468" stroke="#9c8d76" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round"/>
+      <text x="382" y="490" class="water-tag">红谷隧道</text>
+
+      <text x="322" y="222" class="river-label" transform="rotate(-78 322 222)">赣 江</text>
+
+      <!-- 区域 -->
+      <text x="90" y="66" class="area-label">红谷滩</text>
+      <text x="430" y="152" class="area-label">老城 · 东湖</text>
+      <text x="636" y="70" class="area-label">青山湖</text>
+      <text x="638" y="234" class="area-label">京东 · 高新</text>
+      <text x="452" y="600" class="area-label">西湖</text>
+
+      <!-- 地标 -->
+      <g>
+        <rect x="392" y="288" width="17" height="19" rx="2" fill="#e9dcc2" stroke="#b9a887" stroke-width="1"/>
+        <path d="M392 288 L 400 278 L 409 288" fill="none" stroke="#b9a887" stroke-width="1.2"/>
+        <text x="374" y="282" class="poi-label">滕王阁</text>
+      </g>
+      <g>
+        <rect x="535" y="291" width="17" height="17" fill="#ddcead" stroke="#b9a887" stroke-width="1"/>
+        <text x="543" y="285" text-anchor="middle" class="poi-label">八一广场</text>
+      </g>
+
+      <!-- 指北针 -->
+      <g transform="translate(752,44)">
+        <circle r="18" fill="none" stroke="#c6b79d" stroke-width="1"/>
+        <path d="M0 -13 L 5 4 L 0 0 L -5 4 Z" fill="#b09a78"/>
+        <text y="31" text-anchor="middle" class="poi-label">N</text>
+      </g>
+    </svg>
+    <div class="view-banner" id="viewBanner">
+      <b id="viewBannerText">回顾模式</b>
+      <button id="btnBackCurrent">回到当前</button>
+    </div>
+    <div class="stop-tip" id="stopTip"><b></b><span></span></div>
+    <div class="map-legend">
+      <span><i></i>258 路走向</span>
+      <span><i class="dash"></i>隧道</span>
+      <span>点站点看客流</span>
+      <span class="map-note">示意图 · 非精确地理</span>
+    </div>
+  </section>
+
+  <!-- 经营 -->
+  <section class="panel active" id="tab-operate">
+    <div class="card">
+      <div class="card-h"><h2>本月经营</h2><span class="muted" id="monthTag">2017.1</span></div>
+      <div class="tri">
+        <div><small>预测需求</small><b id="fcDemand">—</b><em>人次 / 月</em></div>
+        <div><small>当前运力</small><b id="fcCap">—</b><em>人次 / 月</em></div>
+        <div><small>预计载客率</small><b id="fcRatio">—</b><em>满载更赚钱</em></div>
+      </div>
+      <div class="bar"><i id="fcBar"></i></div>
+      <div class="fare-row">
+        <span>票价</span>
+        <div class="chips" id="fareChips">
+          <button data-fare="1">1 元</button>
+          <button data-fare="2" class="on">2 元</button>
+          <button data-fare="3">3 元</button>
+        </div>
+        <small>降价拉客流，涨价伤口碑；载客率过低会掉口碑。</small>
+      </div>
+      <button class="btn-primary" id="btnOperate">运营本月</button>
+      <p class="hint">一次点击 = 结算一个月。月末可能遇到突发状况。</p>
+    </div>
+
+    <div class="card" id="goalCard">
+      <div class="card-h"><h2>本阶段目标</h2><span class="muted" id="goalEra">2017</span></div>
+      <div id="goalBody"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>经营简报</h2><span class="muted">最近 6 个月</span></div>
+      <div id="reportList"></div>
+    </div>
+  </section>
+
+  <!-- 车队 -->
+  <section class="panel" id="tab-fleet">
+    <div class="card">
+      <div class="card-h"><h2>车队概览</h2><span class="muted" id="fleetCount">0 辆</span></div>
+      <div class="tri">
+        <div><small>在役车辆</small><b id="fleetNum">0</b><em>辆</em></div>
+        <div><small>月运营成本</small><b id="fleetCost">0.0</b><em>万元</em></div>
+        <div><small>平均车况</small><b id="fleetCond">0%</b><em>低于 40% 运力打折</em></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>购入新车</h2><span class="muted">资金 <b id="shopMoney">0.0万</b></span></div>
+      <div class="bus-shop" id="busShop"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>在役车辆</h2><span class="muted">检修可恢复车况</span></div>
+      <div id="fleetList"></div>
+    </div>
+  </section>
+
+  <!-- 升级 -->
+  <section class="panel" id="tab-upgrade">
+    <div class="card">
+      <div class="card-h"><h2>线路升级</h2><span class="muted" id="upHint">一次性投入，长期生效</span></div>
+      <div id="upgradeList"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>经营提示</h2></div>
+      <p class="hint" style="text-align:left;line-height:1.7;margin:0">
+        载客率 = 实际载客 / 需求。长期低于 85% 会掉口碑，口碑又会压低客流。<br>
+        纯电巴士月成本低，但购入价高；柴油巴士便宜，适合滚雪球。<br>
+        车况低于 40% 时运力会明显打折，记得检修或出售。
+      </p>
+    </div>
+  </section>
+
+  <!-- 年表 -->
+  <section class="panel" id="tab-timeline">
+    <div class="card">
+      <div class="card-h"><h2>258 路线路年表</h2><span class="muted">点按钮可看当年线路</span></div>
+      <div class="tl" id="timelineList"></div>
+      <p class="disclaimer">
+        资料参考：南昌公交 2017 年 7 月新辟 258 路；2021 年 3 月、2024 年 3 月两次优化调整；
+        2025 年 11 月 15 日起停开 258 路，沿线由 861、226、263、18 路等承接。
+        游戏内站点与地图位置做了简化示意，非官方精确数据。
+      </p>
+      <button class="reset-btn" id="btnReset">清空存档 · 重开一局</button>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="on" data-tab="operate">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="12" rx="3"/><path d="M7 9h7M7 12h5M8 17v2M16 17v2"/></svg>
+    经营
+  </button>
+  <button data-tab="fleet">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 20l4-4M9 16l-1.5-1.5a9 9 0 0111-11l-4 4 1.5 1.5"/><circle cx="15" cy="9" r="2"/></svg>
+    车队
+  </button>
+  <button data-tab="upgrade">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 19V6M12 6l-5 5M12 6l5 5"/></svg>
+    升级
+  </button>
+  <button data-tab="timeline">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+    年表
+  </button>
+</nav>
+
+<div class="modal-layer" id="modalLayer"><div class="modal" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ===================== 数据 ===================== */
+const BUS_TYPES = {
+  diesel:{name:'柴油巴士', price:18, cap:40, fuel:0.9, wage:0.6, maint:0.35, color:'#8a6a44',
+    desc:'购入便宜、油耗偏高，适合滚雪球扩张。'},
+  hybrid:{name:'气电混动', price:24, cap:42, fuel:0.62, wage:0.6, maint:0.30, color:'#4b7d6a',
+    desc:'成本折中，运力略高于柴油车。'},
+  ev:{name:'纯电巴士', price:31, cap:45, fuel:0.30, wage:0.6, maint:0.22, color:'#3d6f9c',
+    desc:'电费很低，后期降本利器，购入价最高。'}
+};
+
+const STOPS_2024 = [
+  {n:'京东公交停车场',x:742,y:188,w:1.0,key:true,pos:'t'},
+  {n:'京东安居小区南门',x:714,y:222,w:0.45},
+  {n:'京安路艾溪湖南路口',x:690,y:252,w:0.5},
+  {n:'高新大道顺外路口',x:660,y:282,w:0.55},
+  {n:'顺外路青山湖南大道口',x:630,y:310,w:0.45},
+  {n:'洛阳路隧道',x:600,y:340,w:0.7,key:true,pos:'t'},
+  {n:'火车站',x:574,y:370,w:1.5,key:true,pos:'r'},
+  {n:'广场南路',x:552,y:400,w:1.05,key:true,pos:'l'},
+  {n:'老福山',x:568,y:536,w:1.2,key:true,pos:'r'},
+  {n:'站前西路',x:546,y:544,w:0.55},
+  {n:'系马桩街',x:518,y:536,w:0.5},
+  {n:'永叔路',x:492,y:524,w:0.5},
+  {n:'船山路',x:470,y:514,w:0.5},
+  {n:'中山路西口',x:450,y:472,w:0.9,key:true,pos:'l'}
+];
+
+const ERAS = [
+  {
+    year:2017, title:'红谷隧道元年', date:'2017 · 07 · 07',
+    months:[1,2,3,4,5,6,7,8,9,10,11,12], base:3400,
+    change:['新辟 258 路','16 个站点','穿红谷隧道过江'],
+    fact:'2017 年 7 月 7 日，红谷隧道通车。南昌公交新辟 258 路：红谷配套中心—老福山，穿红谷隧道过江，票价 2 元。',
+    goal:'把车队补齐，别让过江的乘客挤不上车。',
+    stops:[
+      {n:'红谷配套中心',x:140,y:112,w:1.6,key:true,pos:'r'},
+      {n:'新二中',x:170,y:170,w:0.55},
+      {n:'凤凰中大道绿茵路口',x:194,y:224,w:0.9,key:true,pos:'l'},
+      {n:'万达广场东',x:222,y:272,w:1.3,key:true,pos:'r'},
+      {n:'地铁大厦',x:242,y:318,w:1.1},
+      {n:'丰和中大道世贸口',x:256,y:362,w:0.7},
+      {n:'怡园路东口',x:270,y:404,w:0.7,key:true,pos:'l'},
+      {n:'桃花一村村委会',x:410,y:456,w:0.5},
+      {n:'十二中',x:436,y:474,w:0.9},
+      {n:'桃苑街西口',x:461,y:487,w:0.5},
+      {n:'桃苑路口',x:485,y:497,w:0.5},
+      {n:'桃苑小区',x:506,y:507,w:0.9},
+      {n:'绳金塔',x:527,y:517,w:1.15,key:true,pos:'r'},
+      {n:'公交保育院',x:545,y:527,w:0.4},
+      {n:'老福山西',x:568,y:536,w:1.5,key:true,pos:'b'}
+    ]
+  },
+  {
+    year:2021, title:'绿茵路·抚河桥', date:'2021 · 03 · 29',
+    months:[1,2,3,4,5,6,7,8,9,10,11,12], base:4300,
+    change:['改走绿茵路 / 沙井路','经红谷隧道','延至站前西路'],
+    fact:'2021 年 3 月 29 日优化调整：红谷配套中心—绿茵路—沙井路—怡园路—金融大街—世贸路—红谷中大道—红谷隧道—朝阳洲中路—抚河桥—船山路—前进路—站前西路。',
+    goal:'客流进入上升期，扩编车队、保住口碑。',
+    stops:[
+      {n:'红谷配套中心',x:140,y:112,w:1.5,key:true,pos:'r'},
+      {n:'绿茵路地铁站西',x:178,y:176,w:0.95,key:true,pos:'l'},
+      {n:'沙井路口',x:206,y:230,w:0.65},
+      {n:'金融大街怡园路口',x:244,y:318,w:0.8},
+      {n:'怡园路东口',x:270,y:404,w:0.75,key:true,pos:'l'},
+      {n:'红谷中大道地铁站',x:286,y:430,w:0.85,key:true,pos:'r'},
+      {n:'朝阳洲中路',x:406,y:506,w:0.8},
+      {n:'抚河桥',x:436,y:518,w:0.65,key:true,pos:'b'},
+      {n:'船山路',x:468,y:530,w:0.75},
+      {n:'前进路',x:498,y:541,w:0.65,key:true,pos:'b'},
+      {n:'站前西路',x:532,y:543,w:1.0,key:true,pos:'r'}
+    ]
+  },
+  {
+    year:2024, title:'跨城东西·24.8 公里', date:'2024 · 03 · 01',
+    months:[1,2,3,4,5,6,7,8,9,10,11,12], base:3000,
+    change:['延伸至京东','穿洛阳路隧道','全程 24.8 公里'],
+    fact:'2024 年 3 月 1 日大调整：线路延伸为京东公交停车场—中山路西口，经洛阳路隧道、老福山、系马桩、船山路，全程 24.8 公里。地铁分流下，客流开始下滑。',
+    goal:'线路变长、地铁分流，控成本比扩运力更重要。',
+    stops:STOPS_2024
+  },
+  {
+    year:2025, title:'停开倒计时', date:'2025 · 11 · 15',
+    months:[7,8,9,10,11], base:2300,
+    change:['客流持续偏低','列入停开名单','5 个月保线窗口'],
+    fact:'2025 年 10 月，南昌公交公布线网优化方案：258 路客流持续偏低、运力未有效利用，自 11 月 15 日起停开，原沿线由 861、226、263、18 路等承接。',
+    goal:'保线听证：资金 ≥ 100 万 · 口碑 ≥ 60 · 载客率 ≥ 75%。',
+    stops:STOPS_2024
+  }
+];
+
+const UPGRADES = [
+  {id:'ac', name:'全线空调车', price:14, desc:'客流 +5%，口碑 +2', fx(s){ s.up.ac = true; s.rep += 2; }},
+  {id:'scan', name:'扫码乘车', price:8, desc:'运力 +6%，口碑 +1', fx(s){ s.up.scan = true; s.rep += 1; }},
+  {id:'ad', name:'车身广告合作', price:10, desc:'每月 +1.2 万收入，客流 +4%', fx(s){ s.up.ad = true; }},
+  {id:'dispatch', name:'智慧调度系统', price:26, desc:'运力 +15%，口碑 +3', fx(s){ s.up.dispatch = true; s.rep += 3; }}
+];
+
+const EVENTS = [
+  {id:'crash', years:[2017,2021,2024,2025], title:'红谷隧道追尾',
+    text:'隧道内两车追尾，258 路一台车被判次要责任。车队被堵在隧道里，乘客开始抱怨。',
+    opts:[
+      {label:'立即抢修、安抚乘客', sub:'支出 2.5 万，口碑 +0.5', fx(m){ state.money -= 2.5; state.rep += 0.5; }},
+      {label:'先撑过本月再说', sub:'本月运力 -15%，口碑 -3', fx(m){ m.capacity *= 0.85; m.rep -= 3; }}
+    ]},
+  {id:'rain', years:[2017,2021,2024,2025], title:'暴雨内涝',
+    text:'连续暴雨，朝阳洲中路积水，车辆只能绕行，班次被打乱。',
+    opts:[
+      {label:'组织绕行、加派班次', sub:'支出 1.8 万，正常运营', fx(m){ state.money -= 1.8; }},
+      {label:'减少班次保安全', sub:'本月运力 -20%，口碑 -2', fx(m){ m.capacity *= 0.8; m.rep -= 2; }}
+    ]},
+  {id:'metro', years:[2021,2024,2025], title:'地铁继续分流',
+    text:'地铁加密班次，沿线通勤客被分走。站台上的人明显少了。',
+    opts:[
+      {label:'加密班次、发传单抢客流', sub:'支出 3 万，本月客流 +5%', fx(m){ state.money -= 3; m.demand *= 1.05; }},
+      {label:'顺其自然', sub:'本月客流 -12%', fx(m){ m.demand *= 0.88; }}
+    ]},
+  {id:'night', years:[2017,2021,2024], title:'绳金塔夜市爆火',
+    text:'绳金塔夜市成了网红打卡点，晚班车被挤爆，乘客在站台排起长队。',
+    opts:[
+      {label:'加开夜班车', sub:'支出 2 万，本月客流 +18%', fx(m){ state.money -= 2; m.demand *= 1.18; m.capacity *= 1.04; }},
+      {label:'维持正常班次', sub:'本月客流 +6%', fx(m){ m.demand *= 1.06; }}
+    ]},
+  {id:'driver', years:[2017,2021,2024,2025], title:'司机被挖走',
+    text:'三名老司机跳槽去开网约车，排班突然吃紧。',
+    opts:[
+      {label:'发留任奖金稳住队伍', sub:'支出 2.2 万', fx(m){ state.money -= 2.2; }},
+      {label:'缩减班次硬扛', sub:'本月运力 -18%，口碑 -2', fx(m){ m.capacity *= 0.82; m.rep -= 2; }}
+    ]},
+  {id:'letter', years:[2017,2021,2024,2025], title:'一封表扬信',
+    text:'一位常坐 258 路的老人送来手写表扬信，说司机每次都等他坐稳才起步。',
+    opts:[
+      {label:'把信贴到车队公告栏', sub:'口碑 +3', fx(m){ m.rep += 3; }},
+      {label:'给全体司机发红包', sub:'支出 1 万，口碑 +5', fx(m){ state.money -= 1; m.rep += 5; }}
+    ]},
+  {id:'rumor', years:[2025], title:'停开传闻',
+    text:'集团客流考核临近，258 路被列入停开观察名单。车队里人心浮动。',
+    opts:[
+      {label:'投入宣传与社区走访', sub:'支出 5 万，口碑 +4，本月客流 +8%', fx(m){ state.money -= 5; state.rep += 4; m.demand *= 1.08; }},
+      {label:'压缩成本，静观其变', sub:'本月运力 -5%', fx(m){ m.capacity *= 0.95; }}
+    ]}
+];
+
+/* ===================== 工具 ===================== */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.min(b, Math.max(a,v));
+const fmtNum = n => Math.round(n).toLocaleString('zh-CN');
+const fmtMoney = v => (v<0?'-':'') + Math.abs(v).toFixed(1) + '万';
+
+function baseMods(){ return {demand:1, capacity:1, cost:0, revenue:0, rep:0}; }
+let mods = baseMods();
+
+function smoothPath(pts){
+  if(!pts.length) return '';
+  let d = 'M ' + pts[0][0] + ' ' + pts[0][1];
+  for(let i=0;i<pts.length-1;i++){
+    const p0 = pts[i-1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    const p3 = pts[i+2] || pts[i+1];
+    const c1x = p1[0] + (p2[0]-p0[0])/6, c1y = p1[1] + (p2[1]-p0[1])/6;
+    const c2x = p2[0] - (p3[0]-p1[0])/6, c2y = p2[1] - (p3[1]-p1[1])/6;
+    d += ' C ' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ', ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ', ' + p2[0] + ' ' + p2[1];
+  }
+  return d;
+}
+
+/* ===================== 状态 ===================== */
+const SAVE_KEY = 'nanchang258.save.v1';
+
+function freshState(){
+  return {
+    v:1, era:0, month:0, money:75, rep:62, fare:2,
+    fleet:[
+      {id:1,type:'diesel',cond:96},
+      {id:2,type:'diesel',cond:94},
+      {id:3,type:'diesel',cond:92},
+      {id:4,type:'diesel',cond:90},
+      {id:5,type:'diesel',cond:88}
+    ],
+    up:{ac:false,scan:false,ad:false,dispatch:false},
+    log:[], lastRatio:1, finished:false, result:null, nextBusId:6
+  };
+}
+
+let state = loadState() || freshState();
+let viewYear = null;
+
+function curEra(){ return ERAS[state.era]; }
+
+function saveState(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){ /* 本地文件模式下可能不可用 */ }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(!s || s.v !== 1 || !Array.isArray(s.fleet) || !s.up) return null;
+    if(typeof s.era !== 'number' || s.era < 0 || s.era >= ERAS.length) return null;
+    return s;
+  }catch(e){ return null; }
+}
+
+/* ===================== 经营计算 ===================== */
+function monthLabel(){
+  const e = curEra();
+  if(state.month >= e.months.length) return e.year + ' · 年末';
+  return e.year + '.' + e.months[state.month];
+}
+
+function calcDemand(){
+  const e = curEra();
+  let d = e.base * 30;
+  d *= 0.85 + state.rep / 100 * 0.45;
+  d *= state.fare === 1 ? 1.18 : (state.fare === 3 ? 0.82 : 1);
+  if(state.up.ac) d *= 1.05;
+  if(state.up.ad) d *= 1.04;
+  d *= mods.demand;
+  return Math.round(d / 100) * 100;
+}
+
+function calcCapacity(){
+  let c = state.fleet.reduce((s,b) => {
+    const t = BUS_TYPES[b.type];
+    return s + t.cap * 420 * (0.55 + 0.45 * b.cond / 100);
+  }, 0);
+  if(state.up.scan) c *= 1.06;
+  if(state.up.dispatch) c *= 1.15;
+  c *= mods.capacity;
+  return Math.round(c / 100) * 100;
+}
+
+function fleetMonthlyCost(){
+  return state.fleet.reduce((s,b) => {
+    const t = BUS_TYPES[b.type];
+    return s + t.fuel + t.wage + t.maint;
+  }, 0);
+}
+
+function pickEvent(){
+  const e = curEra();
+  const pool = EVENTS.filter(ev => ev.years.indexOf(e.year) >= 0);
+  if(e.year === 2025 && state.month === 0) return pool.find(ev => ev.id === 'rumor');
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function resolveMonth(note){
+  const e = curEra();
+  const demand = calcDemand();
+  const capacity = calcCapacity();
+  const served = Math.min(demand, capacity);
+  const ratio = demand ? served / demand : 0;
+
+  const revenue = served * state.fare / 10000 + (state.up.ad ? 1.2 : 0) + mods.revenue;
+  const cost = fleetMonthlyCost() + 1.2 + mods.cost;
+  const net = revenue - cost;
+
+  state.money = +(state.money + net).toFixed(2);
+
+  let dr = ratio > 0.97 ? 1.4 : (ratio > 0.88 ? 0.5 : -(0.88 - ratio) * 16);
+  dr += mods.rep;
+  if(state.fare === 3) dr -= 1.2;
+  else if(state.fare === 1) dr += 0.6;
+  state.rep = clamp(state.rep + dr, 0, 100);
+  state.lastRatio = ratio;
+
+  state.log.unshift({
+    label: monthLabel(), demand, served, ratio:+ratio.toFixed(2),
+    revenue:+revenue.toFixed(2), cost:+cost.toFixed(2), net:+net.toFixed(2),
+    rep:+dr.toFixed(1), note:note || ''
+  });
+  state.log = state.log.slice(0, 10);
+
+  state.fleet.forEach(b => {
+    b.cond = Math.max(0, b.cond - (1.2 + Math.random() * 2.2));
+  });
+
+  mods = baseMods();
+  state.month++;
+  saveState();
+  renderAll();
+  toast((net >= 0 ? '本月净利 +' : '本月净亏 ') + Math.abs(net).toFixed(1) + ' 万', net >= 0);
+
+  if(state.month >= e.months.length){
+    if(state.era < ERAS.length - 1){
+      showEraIntro(state.era + 1);
+    }else{
+      finishGame();
+    }
+  }
+}
+
+/* ===================== 地图 ===================== */
+const mapInfo = {year:-1, path:null, len:0, buses:-1};
+const routeCasingEl = document.createElementNS('http://www.w3.org/2000/svg','path');
+const routeMainEl = document.createElementNS('http://www.w3.org/2000/svg','path');
+const stationLayerEl = document.createElementNS('http://www.w3.org/2000/svg','g');
+const labelLayerEl = document.createElementNS('http://www.w3.org/2000/svg','g');
+const busLayerEl = document.createElementNS('http://www.w3.org/2000/svg','g');
+let busEls = [];
+let busPhase = 0;
+let lastFrame = 0;
+
+const svgEl = $('map');
+svgEl.appendChild(routeCasingEl);
+svgEl.appendChild(routeMainEl);
+svgEl.appendChild(labelLayerEl);
+svgEl.appendChild(stationLayerEl);
+svgEl.appendChild(busLayerEl);
+
+routeCasingEl.setAttribute('fill','none');
+routeCasingEl.setAttribute('stroke','#fffaf0');
+routeCasingEl.setAttribute('stroke-width','11');
+routeCasingEl.setAttribute('stroke-linecap','round');
+routeCasingEl.setAttribute('stroke-linejoin','round');
+
+routeMainEl.setAttribute('fill','none');
+routeMainEl.setAttribute('stroke','#d63a34');
+routeMainEl.setAttribute('stroke-width','6.5');
+routeMainEl.setAttribute('stroke-linecap','round');
+routeMainEl.setAttribute('stroke-linejoin','round');
+
+function renderMapYear(year){
+  const era = ERAS[year];
+  const pts = era.stops.map(s => [s.x, s.y]);
+  const d = smoothPath(pts);
+  routeCasingEl.setAttribute('d', d);
+  routeMainEl.setAttribute('d', d);
+  mapInfo.path = routeMainEl;
+  mapInfo.len = routeMainEl.getTotalLength();
+
+  const sum = era.stops.reduce((a,s) => a + s.w, 0);
+
+  let sh = '';
+  era.stops.forEach((s,i) => {
+    const terminal = (i === 0 || i === era.stops.length - 1);
+    const r = terminal ? 7 : (3.4 + s.w * 1.7);
+    sh += '<g class="stop' + (terminal ? ' terminal' : '') + '" data-i="' + i + '" transform="translate(' + s.x + ',' + s.y + ')">'
+       +  '<circle class="hit" r="17"/>'
+       +  '<circle class="dot" r="' + r.toFixed(1) + '"/>'
+       +  (terminal ? '<circle class="ring" r="11.5"/>' : '')
+       +  '</g>';
+  });
+  stationLayerEl.innerHTML = sh;
+
+  let lh = '';
+  era.stops.forEach(s => {
+    if(!s.key) return;
+    let x = s.x, y = s.y, anchor = 'start';
+    if(s.pos === 'l'){ x = s.x - 12; y = s.y + 4; anchor = 'end'; }
+    else if(s.pos === 't'){ x = s.x; y = s.y - 13; anchor = 'middle'; }
+    else if(s.pos === 'b'){ x = s.x; y = s.y + 20; anchor = 'middle'; }
+    else { x = s.x + 12; y = s.y + 4; }
+    lh += '<text class="st-label" x="' + x + '" y="' + y + '" text-anchor="' + anchor + '">' + s.n + '</text>';
+  });
+  labelLayerEl.innerHTML = lh;
+
+  stationLayerEl.querySelectorAll('.stop').forEach(el => {
+    el.addEventListener('click', ev => {
+      ev.stopPropagation();
+      showStopInfo(+el.getAttribute('data-i'));
+    });
+  });
+
+  [routeCasingEl, routeMainEl].forEach(p => {
+    p.style.transition = 'none';
+    p.style.strokeDasharray = mapInfo.len;
+    p.style.strokeDashoffset = mapInfo.len;
+  });
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      [routeCasingEl, routeMainEl].forEach(p => {
+        p.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)';
+        p.style.strokeDashoffset = 0;
+      });
+    });
+  });
+
+  mapInfo.year = year;
+  renderBuses();
+  $('mapRouteName').textContent = era.stops[0].n + ' ⇄ ' + era.stops[era.stops.length - 1].n;
+}
+
+function renderBuses(){
+  const count = Math.min(Math.max(state.fleet.length, 1), 8);
+  let h = '';
+  for(let i=0;i<count;i++){
+    h += '<g class="bus">'
+      +  '<rect x="-12" y="-7" width="24" height="14" rx="4" fill="#ffb020" stroke="#7a4a00" stroke-width="1.2"/>'
+      +  '<rect x="-9" y="-4" width="6" height="8" rx="1.2" fill="#fff7de" opacity=".9"/>'
+      +  '<text x="2.5" y="3.4" text-anchor="middle" font-size="7" font-weight="700" fill="#5a3600">258</text>'
+      +  '<circle cx="10.5" cy="0" r="2" fill="#fff2c0"/>'
+      +  '</g>';
+  }
+  busLayerEl.innerHTML = h;
+  busEls = Array.prototype.slice.call(busLayerEl.querySelectorAll('.bus'));
+  mapInfo.buses = count;
+}
+
+function animateBuses(ts){
+  if(!lastFrame) lastFrame = ts;
+  const dt = Math.min(ts - lastFrame, 80);
+  lastFrame = ts;
+  if(mapInfo.path && mapInfo.len && busEls.length){
+    busPhase = (busPhase + dt / 26000) % 1;
+    const n = busEls.length;
+    for(let i=0;i<n;i++){
+      const t = (busPhase + i / n) % 1;
+      const dist = t * mapInfo.len;
+      const p = mapInfo.path.getPointAtLength(dist);
+      const pa = mapInfo.path.getPointAtLength(Math.max(0, dist - 3));
+      const pb = mapInfo.path.getPointAtLength(Math.min(mapInfo.len, dist + 3));
+      const ang = Math.atan2(pb.y - pa.y, pb.x - pa.x) * 180 / Math.PI;
+      busEls[i].setAttribute('transform','translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ') rotate(' + ang.toFixed(1) + ')');
+    }
+  }
+  requestAnimationFrame(animateBuses);
+}
+requestAnimationFrame(animateBuses);
+
+function showStopInfo(i){
+  const era = ERAS[viewYear === null ? state.era : viewYear];
+  const s = era.stops[i];
+  if(!s) return;
+  const sum = era.stops.reduce((a,x) => a + x.w, 0);
+  const daily = Math.round(era.base * s.w / sum);
+  const tip = $('stopTip');
+  tip.querySelector('b').textContent = s.n;
+  tip.querySelector('span').textContent = '日均上车约 ' + daily + ' 人次';
+  tip.classList.add('show');
+  clearTimeout(showStopInfo.timer);
+  showStopInfo.timer = setTimeout(() => tip.classList.remove('show'), 4200);
+}
+
+/* ===================== 渲染 ===================== */
+function renderAll(){
+  const e = curEra();
+
+  $('statMoney').textContent = fmtMoney(state.money);
+  $('statRep').textContent = Math.round(state.rep);
+  $('eraName').textContent = e.year + ' · ' + e.title;
+  $('monthTag').textContent = monthLabel();
+
+  renderYearChips();
+
+  const targetYear = viewYear === null ? state.era : viewYear;
+  const count = Math.min(Math.max(state.fleet.length, 1), 8);
+  if(mapInfo.year !== targetYear){
+    renderMapYear(targetYear);
+  }else if(mapInfo.buses !== count){
+    renderBuses();
+  }
+
+  const banner = $('viewBanner');
+  if(viewYear !== null && viewYear !== state.era){
+    banner.classList.add('show');
+    $('viewBannerText').textContent = '回顾模式 · ' + ERAS[viewYear].year + ' 年线路（当前 ' + e.year + ' 年）';
+  }else{
+    banner.classList.remove('show');
+  }
+
+  renderOperate();
+  renderFleet();
+  renderUpgrades();
+  renderTimeline();
+}
+
+function renderYearChips(){
+  const active = viewYear === null ? state.era : viewYear;
+  let h = '';
+  ERAS.forEach((e,i) => {
+    h += '<button data-y="' + i + '" class="' + (i === active ? 'on' : '') + '">' + e.year + '</button>';
+  });
+  $('yearChips').innerHTML = h;
+}
+
+function renderOperate(){
+  const demand = calcDemand();
+  const capacity = calcCapacity();
+  const ratio = demand ? capacity / demand : 0;
+
+  $('fcDemand').textContent = fmtNum(demand);
+  $('fcCap').textContent = fmtNum(capacity);
+  $('fcRatio').textContent = Math.round(Math.min(1, ratio) * 100) + '%';
+  const bar = $('fcBar');
+  bar.style.width = Math.min(100, Math.round(ratio * 100)) + '%';
+
+  $('fareChips').querySelectorAll('button').forEach(b => {
+    b.classList.toggle('on', +b.getAttribute('data-fare') === state.fare);
+  });
+
+  $('btnOperate').disabled = state.finished || state.month >= curEra().months.length;
+  $('goalEra').textContent = curEra().year + ' 目标';
+
+  const goal = $('goalBody');
+  if(curEra().year === 2025){
+    const rows = [
+      ['资金 ≥ 100 万', state.money >= 100],
+      ['口碑 ≥ 60', state.rep >= 60],
+      ['载客率 ≥ 75%（上月）', state.lastRatio >= 0.75]
+    ];
+    goal.innerHTML = '<div class="goal-title">' + curEra().goal + '</div>' + rows.map(r =>
+      '<div class="goal-line ' + (r[1] ? 'ok' : 'bad') + '"><span class="mk">' + (r[1] ? '✓' : '✗') + '</span><span>' + r[0] + '</span></div>'
+    ).join('');
+  }else{
+    goal.innerHTML = '<div class="goal-title">' + curEra().goal + '</div>'
+      + '<div class="goal-line"><span class="mk">·</span><span>车队 ' + state.fleet.length + ' 辆，月运力约 '
+      + fmtNum(capacity) + ' 人次</span></div>'
+      + '<div class="goal-line"><span class="mk">·</span><span>线路月成本约 ' + (fleetMonthlyCost() + 1.2).toFixed(2) + ' 万</span></div>';
+  }
+
+  const list = $('reportList');
+  if(!state.log.length){
+    list.innerHTML = '<div class="empty">还没有经营记录，点“运营本月”开始第一个月。</div>';
+  }else{
+    list.innerHTML = state.log.slice(0, 6).map(r =>
+      '<div class="rep-row">'
+      + '<div class="when">' + r.label + '</div>'
+      + '<div class="body"><small>需求 ' + fmtNum(r.demand) + ' · 载客 ' + fmtNum(r.served)
+      + '（' + Math.round(r.ratio * 100) + '%）' + (r.note ? ' · ' + r.note : '') + '</small>'
+      + '<small>收入 ' + r.revenue.toFixed(1) + ' 万 / 成本 ' + r.cost.toFixed(1) + ' 万</small></div>'
+      + '<div class="num ' + (r.net >= 0 ? 'pos' : 'neg') + '">' + (r.net >= 0 ? '+' : '') + r.net.toFixed(1) + '万</div>'
+      + '</div>'
+    ).join('');
+  }
+}
+
+function renderFleet(){
+  const cost = fleetMonthlyCost();
+  $('fleetCount').textContent = state.fleet.length + ' 辆在役';
+  $('fleetNum').textContent = state.fleet.length;
+  $('fleetCost').textContent = cost.toFixed(1);
+  const avg = state.fleet.length ? state.fleet.reduce((s,b) => s + b.cond, 0) / state.fleet.length : 0;
+  $('fleetCond').textContent = Math.round(avg) + '%';
+  $('shopMoney').textContent = fmtMoney(state.money);
+
+  $('busShop').innerHTML = Object.keys(BUS_TYPES).map(k => {
+    const t = BUS_TYPES[k];
+    const monthly = t.fuel + t.wage + t.maint;
+    const disabled = state.money < t.price || state.finished;
+    return '<div class="shop-card">'
+      + '<h4>' + t.name + '</h4>'
+      + '<div class="price">' + t.price + ' 万 / 辆</div>'
+      + '<p>' + t.desc + '<br>月成本 ' + monthly.toFixed(2) + ' 万 · 满载 ' + fmtNum(t.cap * 420) + ' 人次/月</p>'
+      + '<button data-buy="' + k + '" ' + (disabled ? 'disabled' : '') + '>购入</button>'
+      + '</div>';
+  }).join('');
+
+  const list = $('fleetList');
+  if(!state.fleet.length){
+    list.innerHTML = '<div class="empty">车队空了，快去买车。</div>';
+    return;
+  }
+  list.innerHTML = state.fleet.map(b => {
+    const t = BUS_TYPES[b.type];
+    const cond = Math.round(b.cond);
+    const condClass = cond >= 70 ? '' : (cond >= 40 ? ' mid' : ' low');
+    const sell = Math.round(t.price * 0.5);
+    const fixCost = 0.9;
+    return '<div class="bus-row">'
+      + '<div class="bus-ico">' + t.name.slice(0,2) + '</div>'
+      + '<div class="bus-meta">'
+      +   '<b>' + t.name + ' #' + (b.id < 10 ? '0' + b.id : b.id) + '</b>'
+      +   '<small>车况 ' + cond + '% · 月成本 ' + (t.fuel + t.wage + t.maint).toFixed(2) + ' 万 · 满载 ' + fmtNum(t.cap * 420) + '</small>'
+      +   '<div class="cond-bar"><i class="' + condClass + '" style="width:' + cond + '%"></i></div>'
+      + '</div>'
+      + '<div class="bus-acts">'
+      +   '<button data-fix="' + b.id + '" ' + (cond >= 95 || state.money < fixCost || state.finished ? 'disabled' : '') + '>检修 ' + fixCost + '万</button>'
+      +   '<button class="danger" data-sell="' + b.id + '" ' + (state.finished ? 'disabled' : '') + '>出售 ' + sell + '万</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function renderUpgrades(){
+  $('upHint').textContent = '一次性投入，长期生效';
+  $('upgradeList').innerHTML = UPGRADES.map(u => {
+    const owned = state.up[u.id];
+    const disabled = owned || state.money < u.price || state.finished;
+    return '<div class="up-card">'
+      + '<div class="up-ico">' + (owned ? '已装' : u.price + '万') + '</div>'
+      + '<div class="up-main"><b>' + u.name + '</b><p>' + u.desc + '</p></div>'
+      + '<button class="up-btn' + (owned ? ' owned' : '') + '" data-up="' + u.id + '" ' + (disabled ? 'disabled' : '') + '>'
+      + (owned ? '已启用' : '购入') + '</button>'
+      + '</div>';
+  }).join('');
+}
+
+function renderTimeline(){
+  $('timelineList').innerHTML = ERAS.map((e,i) => {
+    let cls = '';
+    if(i === state.era) cls = ' on';
+    else if(i < state.era) cls = ' done';
+    return '<div class="tl-item' + cls + '">'
+      + '<h4>' + e.year + ' 年 <span class="tag' + (i === state.era ? ' on' : '') + '">'
+      + (i === state.era ? '运营中' : (i < state.era ? '已走过' : '预告')) + '</span></h4>'
+      + '<p>' + e.date + ' · ' + e.change.join(' / ') + '<br>' + e.fact + '</p>'
+      + '<button data-view="' + i + '">在地图上看 ' + e.year + ' 线</button>'
+      + '</div>';
+  }).join('');
+}
+
+/* ===================== 操作 ===================== */
+function buyBus(type){
+  const t = BUS_TYPES[type];
+  if(state.money < t.price) return;
+  state.money = +(state.money - t.price).toFixed(2);
+  const id = state.nextBusId++;
+  state.fleet.push({id, type, cond:100});
+  saveState();
+  renderAll();
+  toast('购入 ' + t.name + ' 一辆，-' + t.price + ' 万');
+}
+
+function fixBus(id){
+  const b = state.fleet.find(x => x.id === id);
+  if(!b || state.money < 0.9) return;
+  state.money = +(state.money - 0.9).toFixed(2);
+  b.cond = Math.min(100, b.cond + 30);
+  saveState();
+  renderAll();
+  toast('检修完成，车况恢复到 ' + Math.round(b.cond) + '%');
+}
+
+function sellBus(id){
+  const b = state.fleet.find(x => x.id === id);
+  if(!b) return;
+  const t = BUS_TYPES[b.type];
+  const back = Math.round(t.price * 0.5);
+  confirmBox('出售车辆', '确定出售 ' + t.name + ' #' + b.id + '？回收 ' + back + ' 万。', '确认出售', () => {
+    state.fleet = state.fleet.filter(x => x.id !== id);
+    state.money = +(state.money + back).toFixed(2);
+    saveState();
+    renderAll();
+    toast('车辆已出售，+' + back + ' 万');
+  });
+}
+
+function buyUpgrade(id){
+  const u = UPGRADES.find(x => x.id === id);
+  if(!u || state.up[id] || state.money < u.price) return;
+  state.money = +(state.money - u.price).toFixed(2);
+  u.fx(state);
+  state.rep = clamp(state.rep, 0, 100);
+  saveState();
+  renderAll();
+  toast('已购入：' + u.name);
+}
+
+function operateMonth(){
+  if(state.finished || state.month >= curEra().months.length) return;
+  mods = baseMods();
+  const forceRumor = curEra().year === 2025 && state.month === 0;
+  if((forceRumor || Math.random() < 0.38) && (state.month > 0 || forceRumor)){
+    const ev = pickEvent();
+    showEvent(ev);
+    return;
+  }
+  resolveMonth('');
+}
+
+/* ===================== 弹窗 ===================== */
+function openModal(html){
+  $('modalBox').innerHTML = html;
+  $('modalLayer').classList.add('show');
+  document.body.classList.add('modal-open');
+}
+function closeModal(){
+  $('modalLayer').classList.remove('show');
+  document.body.classList.remove('modal-open');
+}
+function confirmBox(title, body, okLabel, onOk){
+  openModal('<h3>' + title + '</h3><p>' + body + '</p>'
+    + '<div class="modal-actions"><button class="btn-ghost" id="mCancel">取消</button>'
+    + '<button class="btn-primary" id="mOk">' + okLabel + '</button></div>');
+  $('mCancel').addEventListener('click', closeModal);
+  $('mOk').addEventListener('click', () => { closeModal(); onOk(); });
+}
+
+function showEvent(ev){
+  openModal('<div class="era-tag">突发事件 · ' + curEra().year + '</div>'
+    + '<h3>' + ev.title + '</h3><p>' + ev.text + '</p>'
+    + ev.opts.map((o,i) => '<button class="opt-btn" data-opt="' + i + '"><b>' + o.label + '</b><small>' + o.sub + '</small></button>').join(''));
+  $('modalBox').querySelectorAll('[data-opt]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const o = ev.opts[+btn.getAttribute('data-opt')];
+      o.fx(mods);
+      state.rep = clamp(state.rep, 0, 100);
+      closeModal();
+      resolveMonth(ev.title);
+    });
+  });
+}
+
+function showEraIntro(idx){
+  const e = ERAS[idx];
+  openModal('<div class="era-tag">' + e.date + '</div>'
+    + '<h3>' + e.year + ' · ' + e.title + '</h3>'
+    + '<p>' + e.fact + '</p>'
+    + '<div class="tags">' + e.change.map(c => '<span>' + c + '</span>').join('') + '</div>'
+    + '<p style="font-size:12px;color:#ffcf72">' + e.goal + '</p>'
+    + '<button class="btn-primary" id="mNext">进入 ' + e.year + ' 年</button>');
+  $('mNext').addEventListener('click', () => {
+    closeModal();
+    state.era = idx;
+    state.month = 0;
+    viewYear = null;
+    mods = baseMods();
+    saveState();
+    renderAll();
+  });
+}
+
+function finishGame(){
+  if(state.finished) return;
+  const ok = state.money >= 100 && state.rep >= 60 && state.lastRatio >= 0.75;
+  const score = Math.round(state.money * 10 + state.rep * 100 + state.lastRatio * 200);
+  state.finished = true;
+  state.result = {ok, money:+state.money.toFixed(2), rep:Math.round(state.rep),
+    ratio:Math.round(state.lastRatio * 100), score};
+  saveState();
+  renderAll();
+  showEnding();
+}
+
+function showEnding(){
+  const r = state.result || {ok:false, money:state.money, rep:state.rep, ratio:Math.round(state.lastRatio*100), score:0};
+  openModal('<div class="' + (r.ok ? 'ending-good' : 'ending-bad') + '">'
+    + '<div class="era-tag">2025 · 11 · 15</div>'
+    + '<h3>' + (r.ok ? '258 路，留下来了' : '258 路，停开了') + '</h3>'
+    + '<p>' + (r.ok
+      ? '在你的经营下，258 路交出了一份漂亮的客流答卷。集团决定暂缓停开，线路继续穿行红谷隧道——这是平行南昌里的结局。'
+      : '现实中的 2025 年 11 月 15 日，258 路因客流持续偏低停开，861、226、263、18 路承接沿线出行。你在平行南昌里的经营，到此结束。')
+    + '</p>'
+    + '<div class="result-grid">'
+    + '<div><small>最终资金</small><b>' + r.money.toFixed(1) + '万</b></div>'
+    + '<div><small>口碑</small><b>' + r.rep + '</b></div>'
+    + '<div><small>载客率</small><b>' + r.ratio + '%</b></div>'
+    + '</div>'
+    + '<div class="score-line">经营评分 ' + r.score + '</div>'
+    + '<button class="btn-primary" id="mRestart">再开一局</button>'
+    + '</div>');
+  $('mRestart').addEventListener('click', restart);
+}
+
+function showIntro(){
+  openModal('<div class="era-tag">2017 · 07 · 07</div>'
+    + '<h3>接手 258 路</h3>'
+    + '<p>红谷隧道刚通车，258 路新辟。你承包了这条过江线路，要在四个年份里把它经营下去。</p>'
+    + '<div class="intro-steps">'
+    + '<div><i>1</i><span>点“运营本月”结算：收入来自载客，成本来自车辆与人力。</span></div>'
+    + '<div><i>2</i><span>载客率低就补车，成本太高就换纯电车或出售旧车。</span></div>'
+    + '<div><i>3</i><span>2025 年停开听证前，达成资金、口碑、载客率目标，改写结局。</span></div>'
+    + '</div>'
+    + '<button class="btn-primary" id="mStart">开始营业</button>');
+  $('mStart').addEventListener('click', closeModal);
+}
+
+function restart(){
+  state = freshState();
+  viewYear = null;
+  mods = baseMods();
+  saveState();
+  closeModal();
+  renderAll();
+  toast('新的一局开始了');
+}
+
+/* ===================== 事件绑定 ===================== */
+$('yearChips').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-y]');
+  if(!btn) return;
+  const idx = +btn.getAttribute('data-y');
+  viewYear = (idx === state.era) ? null : idx;
+  renderAll();
+});
+
+$('btnBackCurrent').addEventListener('click', () => {
+  viewYear = null;
+  renderAll();
+});
+
+$('fareChips').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-fare]');
+  if(!btn) return;
+  state.fare = +btn.getAttribute('data-fare');
+  saveState();
+  renderAll();
+});
+
+$('btnOperate').addEventListener('click', operateMonth);
+
+$('busShop').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-buy]');
+  if(btn) buyBus(btn.getAttribute('data-buy'));
+});
+
+$('fleetList').addEventListener('click', e => {
+  const fix = e.target.closest('button[data-fix]');
+  if(fix) return fixBus(+fix.getAttribute('data-fix'));
+  const sell = e.target.closest('button[data-sell]');
+  if(sell) return sellBus(+sell.getAttribute('data-sell'));
+});
+
+$('upgradeList').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-up]');
+  if(btn) buyUpgrade(btn.getAttribute('data-up'));
+});
+
+$('timelineList').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if(!btn) return;
+  const idx = +btn.getAttribute('data-view');
+  viewYear = (idx === state.era) ? null : idx;
+  renderAll();
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+$('btnReset').addEventListener('click', () => {
+  confirmBox('重开一局', '当前经营进度会被清空，确定重新开始？', '确定重开', restart);
+});
+
+$('tabbar').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if(!btn) return;
+  const tab = btn.getAttribute('data-tab');
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b === btn));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+});
+
+/* ===================== 启动 ===================== */
+renderAll();
+
+if(state.finished){
+  setTimeout(showEnding, 320);
+}else{
+  const e = curEra();
+  if(state.month >= e.months.length){
+    if(state.era < ERAS.length - 1) setTimeout(() => showEraIntro(state.era + 1), 320);
+    else setTimeout(finishGame, 320);
+  }else if(!state.log.length){
+    setTimeout(showIntro, 260);
+  }
+}
+
+function toast(text, good){
+  const t = $('toast');
+  t.textContent = text;
+  t.style.borderColor = good === false ? '#5a2c2c' : '#333c4b';
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script></body>
+</html>
